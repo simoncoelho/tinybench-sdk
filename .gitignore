@@ -1,3 +1,52 @@
-﻿.vs/
+## Streamlined .gitignore for modern .NET projects.
+
+# Visual Studio / IDE state
+.vs/
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
 **/bin/
 **/obj/
+[Ll]og/
+[Ll]ogs/
+
+# .NET
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ASP.NET scaffolding
+ScaffoldingReadMe.txt
+
+# NuGet packages
+*.nupkg
+*.snupkg
+
+# Environment
+.env
+
+# Temporary files
+~$*
+*~
+
+# Coverage and test results
+CodeCoverage/
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+# MSBuild binary and structured logs
+*.binlog
