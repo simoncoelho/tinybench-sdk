@@ -1,0 +1,23 @@
+﻿# Connection docs stay separate from driver code.
+connectMethod: "Connect"
+disconnectMethod: "Disconnect"
+parameters:
+  - name: "host"
+    type: "String"
+    array: false
+    displayName: TODO
+    description: TODO
+    required: true
+  - name: "port"
+    type: "Integer"
+    array: false
+    displayName: TODO
+    description: TODO
+    required: true
+  - name: "serialNumber"
+    type: "String"
+    array: false
+    displayName: TODO
+    description: TODO
+    required: false
+    default: null

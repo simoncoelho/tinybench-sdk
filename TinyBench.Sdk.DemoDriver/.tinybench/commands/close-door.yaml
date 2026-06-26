@@ -1,0 +1,17 @@
+﻿# Command documentation. Keep business logic in C#, keep docs here.
+id: "close-door"
+method: "CloseDoor"
+displayName: TODO
+description: TODO
+inputs:
+  []
+outputs:
+  - name: "result"
+    type: "Boolean"
+    array: false
+    displayName: TODO
+    description: TODO
+sila:
+  feature: TODO
+  command: TODO
+  description: TODO

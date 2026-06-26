@@ -1,0 +1,20 @@
+<Solution>
+  <Project Path="TinyBench.BareMetal.Analyzers/TinyBench.BareMetal.Analyzers.csproj" />
+  <Project Path="TinyBench.BareMetal.Core/TinyBench.BareMetal.Core.csproj" />
+  <Project Path="TinyBench.BareMetal.DemoDriver/TinyBench.BareMetal.DemoDriver.csproj" />
+  <Project Path="TinyBench.BareMetal.Inspector/TinyBench.BareMetal.Inspector.csproj" />
+  <Project Path="TinyBench.Core/TinyBench.Core.csproj" />
+  <Project Path="TinyBench.SampleDriver/TinyBench.SampleDriver.csproj" />
+  <Project Path="TinyBench.Web/TinyBench.Web.csproj" />
+  <Project Path="TinyBench.Ui/TinyBench.Ui.csproj" />
+  <Project Path="TinyBench.Demo/TinyBench.Demo.csproj" />
+  <Project Path="TinyBench.Api/TinyBench.Api.csproj" />
+  <Project Path="TinyBench.SiLA/TinyBench.SiLA.csproj" />
+  <Project Path="TinyBench.SiLA.Client/TinyBench.SiLA.Client.csproj" />
+  <Project Path="TinyBench.Sdk.Analyzers/TinyBench.Sdk.Analyzers.csproj" />
+  <Project Path="TinyBench.Sdk.Core/TinyBench.Sdk.Core.csproj" />
+  <Project Path="TinyBench.Sdk.DemoDriver/TinyBench.Sdk.DemoDriver.csproj" />
+  <Project Path="TinyBench.Sdk.Tools/TinyBench.Sdk.Tools.csproj" />
+  <Project Path="TinyBench.SiLA.API/TinyBench.SiLA.API.csproj" />
+  <Project Path="TinyBench.SiLA.Tools/TinyBench.SiLA.Tools.csproj" />
+</Solution>

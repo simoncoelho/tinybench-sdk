@@ -1,0 +1,28 @@
+﻿# Command documentation. Keep business logic in C#, keep docs here.
+id: "spin"
+method: "Spin"
+displayName: TODO
+description: TODO
+inputs:
+  - name: "targetRcf"
+    type: "Integer"
+    array: false
+    displayName: TODO
+    description: TODO
+    required: true
+  - name: "durationSeconds"
+    type: "Integer"
+    array: false
+    displayName: TODO
+    description: TODO
+    required: true
+outputs:
+  - name: "result"
+    type: "String"
+    array: true
+    displayName: TODO
+    description: TODO
+sila:
+  feature: TODO
+  command: TODO
+  description: TODO

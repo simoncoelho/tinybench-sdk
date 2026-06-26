@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <None Include=".tinybench\commands\close-door.yaml" />
+    <None Include=".tinybench\commands\load-rotor.yaml" />
+    <None Include=".tinybench\commands\open-door.yaml" />
+    <None Include=".tinybench\commands\read-status.yaml" />
+    <None Include=".tinybench\commands\spin.yaml" />
+    <None Include=".tinybench\connection.yaml" />
+    <None Include=".tinybench\driver.yaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TinyBench.Sdk.Core\TinyBench.Sdk.Core.csproj" />
+    <ProjectReference Include="..\TinyBench.Sdk.Analyzers\TinyBench.Sdk.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

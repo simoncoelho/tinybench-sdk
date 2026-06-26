@@ -1,0 +1,12 @@
+﻿# Human-owned TinyBench driver documentation.
+# This file is created once by TinyBench.Sdk.Tools. Edit it directly.
+id: "bionex-hig"
+class: "TinyBench.Sdk.DemoDriver.HiGDriver"
+displayName: TODO
+manufacturer: TODO
+model: TODO
+version: 0.1.0
+description: TODO
+requiredSoftware:
+  - TODO
+setupInstructions: TODO
