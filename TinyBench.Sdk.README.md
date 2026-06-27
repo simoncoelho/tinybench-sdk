@@ -38,16 +38,16 @@ Exposed methods must be `public` and synchronous. They may only use the TinyBenc
 - `CancellationToken` as an injected parameter
 - `void` or a direct scalar/array return value
 
-## Generated Docs
+## Synced Docs
 
-Build the driver, then scaffold docs:
+Build the driver, then sync docs:
 
 ```powershell
 dotnet build .\TinyBench.Sdk.DemoDriver\TinyBench.Sdk.DemoDriver.csproj
 dotnet run --project .\TinyBench.Sdk.Tools\TinyBench.Sdk.Tools.csproj -- --project .\TinyBench.Sdk.DemoDriver
 ```
 
-The tool writes docs into the driver project:
+The tool writes and keeps docs current in the driver project:
 
 ```text
 TinyBench.Sdk.DemoDriver/
@@ -59,9 +59,14 @@ TinyBench.Sdk.DemoDriver/
       spin.yaml
 ```
 
-Existing YAML files are not overwritten. The intent is that generated docs become human-owned files, keeping documentation separate from driver code.
+Each run syncs generated structure from the compiled driver:
 
-Use `--force` only when you want to regenerate scaffold files after changing method signatures:
+- removed commands delete stale command YAML files
+- renamed or added parameters update command YAML inputs
+- changed return types update command YAML outputs
+- editable metadata such as `displayName`, `description`, and `sila` fields is preserved when the matching command/input/output still exists
+
+Use `--force` when you want to regenerate docs without preserving editable metadata:
 
 ```powershell
 dotnet run --project .\TinyBench.Sdk.Tools\TinyBench.Sdk.Tools.csproj -- --project .\TinyBench.Sdk.DemoDriver --force

@@ -1,5 +1,5 @@
 ﻿# Human-owned TinyBench driver documentation.
-# This file is created once by TinyBench.Sdk.Tools. Edit it directly.
+# TinyBench.Sdk.Tools keeps generated fields current and preserves editable metadata when possible.
 id: "bionex-hig"
 class: "TinyBench.Sdk.DemoDriver.HiGDriver"
 displayName: TODO

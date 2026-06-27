@@ -1,4 +1,5 @@
 ﻿# Command documentation. Keep business logic in C#, keep docs here.
+# TinyBench.Sdk.Tools keeps id, method, inputs, and outputs current.
 id: "load-rotor"
 method: "LoadRotor"
 displayName: TODO

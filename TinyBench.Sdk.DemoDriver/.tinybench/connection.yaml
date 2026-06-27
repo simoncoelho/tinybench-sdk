@@ -1,4 +1,5 @@
 ﻿# Connection docs stay separate from driver code.
+# TinyBench.Sdk.Tools keeps method and parameter structure current.
 connectMethod: "Connect"
 disconnectMethod: "Disconnect"
 parameters:

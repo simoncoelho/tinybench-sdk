@@ -44,7 +44,7 @@ foreach (var driverType in drivers)
     WriteCommandYaml(outputPath, driverType);
 }
 
-Console.WriteLine($"TinyBench docs scaffolded in {outputPath}");
+Console.WriteLine($"TinyBench docs synced in {outputPath}");
 return 0;
 
 static string FindDefaultAssembly(string projectPath)
@@ -57,31 +57,53 @@ static string FindDefaultAssembly(string projectPath)
 
 static void WriteDriverYaml(string outputPath, Type driverType)
 {
+    var path = Path.Combine(outputPath, "driver.yaml");
+    var existing = Options.Current.Force ? EmptyValues() : ReadTopLevelValues(path);
+    var requiredSoftware = Options.Current.Force ? null : ReadBlock(path, "requiredSoftware");
     var driver = driverType.GetCustomAttribute<TinyDriverAttribute>()!;
+    var displayName = Preserve(existing, "displayName", "TODO");
+    var manufacturer = Preserve(existing, "manufacturer", "TODO");
+    var model = Preserve(existing, "model", "TODO");
+    var version = Preserve(existing, "version", "0.1.0");
+    var description = Preserve(existing, "description", "TODO");
+    var setupInstructions = Preserve(existing, "setupInstructions", "TODO");
     var yaml = new StringBuilder()
         .AppendLine("# Human-owned TinyBench driver documentation.")
-        .AppendLine("# This file is created once by TinyBench.Sdk.Tools. Edit it directly.")
+        .AppendLine("# TinyBench.Sdk.Tools keeps generated fields current and preserves editable metadata when possible.")
         .AppendLine($"id: {Yaml(driver.Id)}")
         .AppendLine($"class: {Yaml(driverType.FullName ?? driverType.Name)}")
-        .AppendLine("displayName: TODO")
-        .AppendLine("manufacturer: TODO")
-        .AppendLine("model: TODO")
-        .AppendLine("version: 0.1.0")
-        .AppendLine("description: TODO")
-        .AppendLine("requiredSoftware:")
-        .AppendLine("  - TODO")
-        .AppendLine("setupInstructions: TODO")
-        .ToString();
+        .AppendLine($"displayName: {displayName}")
+        .AppendLine($"manufacturer: {manufacturer}")
+        .AppendLine($"model: {model}")
+        .AppendLine($"version: {version}")
+        .AppendLine($"description: {description}")
+        .AppendLine("requiredSoftware:");
 
-    WriteIfMissing(Path.Combine(outputPath, "driver.yaml"), yaml);
+    if (requiredSoftware is { Count: > 0 })
+    {
+        foreach (var line in requiredSoftware)
+        {
+            yaml.AppendLine(line);
+        }
+    }
+    else
+    {
+        yaml.AppendLine("  - TODO");
+    }
+
+    yaml.AppendLine($"setupInstructions: {setupInstructions}");
+    WriteSynced(path, yaml.ToString());
 }
 
 static void WriteConnectionYaml(string outputPath, Type driverType)
 {
+    var path = Path.Combine(outputPath, "connection.yaml");
+    var existing = Options.Current.Force ? EmptyItems() : ReadItemValues(path, "parameters");
     var connect = driverType.GetMethods().FirstOrDefault(method => method.GetCustomAttribute<TinyConnectAttribute>() is not null);
     var disconnect = driverType.GetMethods().FirstOrDefault(method => method.GetCustomAttribute<TinyDisconnectAttribute>() is not null);
     var yaml = new StringBuilder()
         .AppendLine("# Connection docs stay separate from driver code.")
+        .AppendLine("# TinyBench.Sdk.Tools keeps method and parameter structure current.")
         .AppendLine($"connectMethod: {Yaml(connect?.Name ?? "TODO")}")
         .AppendLine($"disconnectMethod: {Yaml(disconnect?.Name ?? "TODO")}")
         .AppendLine("parameters:");
@@ -94,10 +116,14 @@ static void WriteConnectionYaml(string outputPath, Type driverType)
     {
         foreach (var parameter in connect.GetParameters().Where(parameter => parameter.ParameterType != typeof(CancellationToken)))
         {
-            yaml.AppendLine($"  - name: {Yaml(parameter.Name ?? "input")}");
+            var name = parameter.Name ?? "input";
+            var metadata = existing.TryGetValue(name, out var values) ? values : EmptyMutableValues();
+            var displayName = Preserve(metadata, "displayName", "TODO");
+            var description = Preserve(metadata, "description", "TODO");
+            yaml.AppendLine($"  - name: {Yaml(name)}");
             AppendType(yaml, parameter.ParameterType);
-            yaml.AppendLine($"    displayName: TODO");
-            yaml.AppendLine($"    description: TODO");
+            yaml.AppendLine($"    displayName: {displayName}");
+            yaml.AppendLine($"    description: {description}");
             yaml.AppendLine($"    required: {(!parameter.HasDefaultValue).ToString().ToLowerInvariant()}");
             if (parameter.HasDefaultValue)
             {
@@ -106,64 +132,104 @@ static void WriteConnectionYaml(string outputPath, Type driverType)
         }
     }
 
-    WriteIfMissing(Path.Combine(outputPath, "connection.yaml"), yaml.ToString());
+    WriteSynced(path, yaml.ToString());
 }
 
 static void WriteCommandYaml(string outputPath, Type driverType)
 {
-    foreach (var method in driverType.GetMethods().Where(method => method.GetCustomAttribute<TinyCommandAttribute>() is not null))
-    {
-        var command = method.GetCustomAttribute<TinyCommandAttribute>()!;
-        var yaml = new StringBuilder()
-            .AppendLine("# Command documentation. Keep business logic in C#, keep docs here.")
-            .AppendLine($"id: {Yaml(command.Id)}")
-            .AppendLine($"method: {Yaml(method.Name)}")
-            .AppendLine("displayName: TODO")
-            .AppendLine("description: TODO")
-            .AppendLine("inputs:");
+    var commandsPath = Path.Combine(outputPath, "commands");
+    Directory.CreateDirectory(commandsPath);
+    var discovered = driverType.GetMethods()
+        .Where(method => method.GetCustomAttribute<TinyCommandAttribute>() is not null)
+        .Select(method => (Method: method, Command: method.GetCustomAttribute<TinyCommandAttribute>()!))
+        .ToArray();
+    var commandIds = discovered.Select(item => item.Command.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var inputs = method.GetParameters().Where(parameter => parameter.ParameterType != typeof(CancellationToken)).ToArray();
-        if (inputs.Length == 0)
+    foreach (var existingPath in Directory.EnumerateFiles(commandsPath, "*.yaml"))
+    {
+        var id = Path.GetFileNameWithoutExtension(existingPath);
+        if (!commandIds.Contains(id))
         {
-            yaml.AppendLine("  []");
+            File.Delete(existingPath);
+            Console.WriteLine($"removed   {existingPath}");
         }
-        else
+    }
+
+    foreach (var (method, command) in discovered)
+    {
+        WriteOneCommandYaml(commandsPath, method, command);
+    }
+}
+
+static void WriteOneCommandYaml(string commandsPath, MethodInfo method, TinyCommandAttribute command)
+{
+    var path = Path.Combine(commandsPath, command.Id + ".yaml");
+    var topLevel = Options.Current.Force ? EmptyValues() : ReadTopLevelValues(path);
+    var existingInputs = Options.Current.Force ? EmptyItems() : ReadItemValues(path, "inputs");
+    var existingOutputs = Options.Current.Force ? EmptyItems() : ReadItemValues(path, "outputs");
+    var sila = Options.Current.Force ? EmptyValues() : ReadNestedValues(path, "sila");
+    var displayName = Preserve(topLevel, "displayName", "TODO");
+    var description = Preserve(topLevel, "description", "TODO");
+    var yaml = new StringBuilder()
+        .AppendLine("# Command documentation. Keep business logic in C#, keep docs here.")
+        .AppendLine("# TinyBench.Sdk.Tools keeps id, method, inputs, and outputs current.")
+        .AppendLine($"id: {Yaml(command.Id)}")
+        .AppendLine($"method: {Yaml(method.Name)}")
+        .AppendLine($"displayName: {displayName}")
+        .AppendLine($"description: {description}")
+        .AppendLine("inputs:");
+
+    var inputs = method.GetParameters().Where(parameter => parameter.ParameterType != typeof(CancellationToken)).ToArray();
+    if (inputs.Length == 0)
+    {
+        yaml.AppendLine("  []");
+    }
+    else
+    {
+        foreach (var parameter in inputs)
         {
-            foreach (var parameter in inputs)
+            var name = parameter.Name ?? "input";
+            var metadata = existingInputs.TryGetValue(name, out var values) ? values : EmptyMutableValues();
+            var inputDisplayName = Preserve(metadata, "displayName", "TODO");
+            var inputDescription = Preserve(metadata, "description", "TODO");
+            yaml.AppendLine($"  - name: {Yaml(name)}");
+            AppendType(yaml, parameter.ParameterType);
+            yaml.AppendLine($"    displayName: {inputDisplayName}");
+            yaml.AppendLine($"    description: {inputDescription}");
+            yaml.AppendLine($"    required: {(!parameter.HasDefaultValue).ToString().ToLowerInvariant()}");
+            if (parameter.HasDefaultValue)
             {
-                yaml.AppendLine($"  - name: {Yaml(parameter.Name ?? "input")}");
-                AppendType(yaml, parameter.ParameterType);
-                yaml.AppendLine($"    displayName: TODO");
-                yaml.AppendLine($"    description: TODO");
-                yaml.AppendLine($"    required: {(!parameter.HasDefaultValue).ToString().ToLowerInvariant()}");
-                if (parameter.HasDefaultValue)
-                {
-                    yaml.AppendLine($"    default: {Yaml(parameter.DefaultValue)}");
-                }
+                yaml.AppendLine($"    default: {Yaml(parameter.DefaultValue)}");
             }
         }
-
-        yaml.AppendLine("outputs:");
-        var output = CreateOutput(method);
-        if (output is null)
-        {
-            yaml.AppendLine("  []");
-        }
-        else
-        {
-            yaml.AppendLine($"  - name: {Yaml(output.Value.Name)}");
-            AppendType(yaml, output.Value.Type);
-            yaml.AppendLine($"    displayName: TODO");
-            yaml.AppendLine($"    description: TODO");
-        }
-
-        yaml.AppendLine("sila:");
-        yaml.AppendLine("  feature: TODO");
-        yaml.AppendLine("  command: TODO");
-        yaml.AppendLine("  description: TODO");
-
-        WriteIfMissing(Path.Combine(outputPath, "commands", command.Id + ".yaml"), yaml.ToString());
     }
+
+    yaml.AppendLine("outputs:");
+    var output = CreateOutput(method);
+    if (output is null)
+    {
+        yaml.AppendLine("  []");
+    }
+    else
+    {
+        var metadata = existingOutputs.TryGetValue(output.Value.Name, out var values) ? values : EmptyMutableValues();
+        var outputDisplayName = Preserve(metadata, "displayName", "TODO");
+        var outputDescription = Preserve(metadata, "description", "TODO");
+        yaml.AppendLine($"  - name: {Yaml(output.Value.Name)}");
+        AppendType(yaml, output.Value.Type);
+        yaml.AppendLine($"    displayName: {outputDisplayName}");
+        yaml.AppendLine($"    description: {outputDescription}");
+    }
+
+    var silaFeature = Preserve(sila, "feature", "TODO");
+    var silaCommand = Preserve(sila, "command", "TODO");
+    var silaDescription = Preserve(sila, "description", "TODO");
+    yaml.AppendLine("sila:");
+    yaml.AppendLine($"  feature: {silaFeature}");
+    yaml.AppendLine($"  command: {silaCommand}");
+    yaml.AppendLine($"  description: {silaDescription}");
+
+    WriteSynced(path, yaml.ToString());
 }
 
 static Type UnwrapReturn(Type type)
@@ -217,16 +283,196 @@ static string Yaml(object? value)
     return "\"" + text.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
 }
 
-static void WriteIfMissing(string path, string content)
+static IReadOnlyDictionary<string, string> EmptyValues() => new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+static IReadOnlyDictionary<string, Dictionary<string, string>> EmptyItems() =>
+    new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+
+static Dictionary<string, string> EmptyMutableValues() => new(StringComparer.OrdinalIgnoreCase);
+
+static string Preserve(IReadOnlyDictionary<string, string> values, string key, string fallback)
 {
-    if (File.Exists(path) && !Options.Current.Force)
+    if (!Options.Current.Force && values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value))
     {
-        Console.WriteLine($"unchanged {path}");
-        return;
+        return value;
     }
 
+    return Yaml(fallback);
+}
+
+static IReadOnlyDictionary<string, string> ReadTopLevelValues(string path)
+{
+    var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    if (!File.Exists(path))
+    {
+        return values;
+    }
+
+    foreach (var line in File.ReadLines(path))
+    {
+        if (line.Length == 0 || char.IsWhiteSpace(line[0]) || line.StartsWith("#", StringComparison.Ordinal))
+        {
+            continue;
+        }
+
+        var separator = line.IndexOf(':');
+        if (separator <= 0)
+        {
+            continue;
+        }
+
+        var value = line[(separator + 1)..].Trim();
+        if (value.Length > 0)
+        {
+            values[line[..separator].Trim()] = value;
+        }
+    }
+
+    return values;
+}
+
+static IReadOnlyDictionary<string, string> ReadNestedValues(string path, string section)
+{
+    var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    if (!File.Exists(path))
+    {
+        return values;
+    }
+
+    var inSection = false;
+    foreach (var line in File.ReadLines(path))
+    {
+        if (!inSection)
+        {
+            inSection = string.Equals(line.Trim(), section + ":", StringComparison.OrdinalIgnoreCase);
+            continue;
+        }
+
+        if (line.Length == 0)
+        {
+            continue;
+        }
+
+        if (!line.StartsWith("  ", StringComparison.Ordinal))
+        {
+            break;
+        }
+
+        var trimmed = line.Trim();
+        var separator = trimmed.IndexOf(':');
+        if (separator > 0)
+        {
+            values[trimmed[..separator].Trim()] = trimmed[(separator + 1)..].Trim();
+        }
+    }
+
+    return values;
+}
+
+static IReadOnlyDictionary<string, Dictionary<string, string>> ReadItemValues(string path, string section)
+{
+    var values = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+    if (!File.Exists(path))
+    {
+        return values;
+    }
+
+    var inSection = false;
+    Dictionary<string, string>? current = null;
+    foreach (var line in File.ReadLines(path))
+    {
+        if (!inSection)
+        {
+            inSection = string.Equals(line.Trim(), section + ":", StringComparison.OrdinalIgnoreCase);
+            continue;
+        }
+
+        if (line.Length == 0)
+        {
+            continue;
+        }
+
+        if (!line.StartsWith("  ", StringComparison.Ordinal))
+        {
+            break;
+        }
+
+        var trimmed = line.Trim();
+        if (trimmed.StartsWith("- name:", StringComparison.Ordinal))
+        {
+            var name = trimmed["- name:".Length..].Trim();
+            current = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["name"] = name
+            };
+            values[Unquote(name)] = current;
+            continue;
+        }
+
+        if (current is null)
+        {
+            continue;
+        }
+
+        var separator = trimmed.IndexOf(':');
+        if (separator > 0)
+        {
+            current[trimmed[..separator].Trim()] = trimmed[(separator + 1)..].Trim();
+        }
+    }
+
+    return values;
+}
+
+static IReadOnlyList<string>? ReadBlock(string path, string section)
+{
+    if (!File.Exists(path))
+    {
+        return null;
+    }
+
+    var lines = new List<string>();
+    var inSection = false;
+    foreach (var line in File.ReadLines(path))
+    {
+        if (!inSection)
+        {
+            inSection = string.Equals(line.Trim(), section + ":", StringComparison.OrdinalIgnoreCase);
+            continue;
+        }
+
+        if (line.Length == 0)
+        {
+            continue;
+        }
+
+        if (!line.StartsWith("  ", StringComparison.Ordinal))
+        {
+            break;
+        }
+
+        lines.Add(line);
+    }
+
+    return lines;
+}
+
+static string Unquote(string value)
+{
+    value = value.Trim();
+    if (value.Length >= 2 && value[0] == '"' && value[^1] == '"')
+    {
+        return value[1..^1].Replace("\\\"", "\"").Replace("\\\\", "\\");
+    }
+
+    return value;
+}
+
+static void WriteSynced(string path, string content)
+{
+    var existed = File.Exists(path);
     File.WriteAllText(path, content, Encoding.UTF8);
-    Console.WriteLine($"created   {path}");
+    Console.WriteLine(existed ? $"synced    {path}" : $"created   {path}");
 }
 
 internal sealed record Options(string? ProjectPath, string? AssemblyPath, string? OutputPath, bool Force, bool ShowHelp)
@@ -277,6 +523,6 @@ internal sealed record Options(string? ProjectPath, string? AssemblyPath, string
         Console.WriteLine("  --project <path>   Driver project folder. Defaults to current directory.");
         Console.WriteLine("  --assembly <path>  Driver assembly. Defaults to bin/Debug/net10.0/<project>.dll.");
         Console.WriteLine("  --output <path>    Docs output. Defaults to <project>/.tinybench.");
-        Console.WriteLine("  --force            Overwrite existing generated YAML files.");
+        Console.WriteLine("  --force            Regenerate docs without preserving editable metadata.");
     }
 }

@@ -78,13 +78,13 @@ Build the driver first:
 dotnet build .\TinyBench.Sdk.DemoDriver\TinyBench.Sdk.DemoDriver.csproj
 ```
 
-Generate docs:
+Sync docs:
 
 ```powershell
 dotnet run --project .\TinyBench.Sdk.Tools\TinyBench.Sdk.Tools.csproj -- --project .\TinyBench.Sdk.DemoDriver
 ```
 
-The tool writes docs inside the driver project:
+The tool writes and keeps docs current inside the driver project:
 
 ```text
 TinyBench.Sdk.DemoDriver/
@@ -99,7 +99,14 @@ TinyBench.Sdk.DemoDriver/
       read-status.yaml
 ```
 
-Existing YAML files are not overwritten by default. Use `--force` only when you want to regenerate scaffold files after method signature changes:
+Each run syncs generated structure from the compiled driver:
+
+- removed commands delete stale command YAML files
+- renamed or added parameters update command YAML inputs
+- changed return types update command YAML outputs
+- editable metadata such as `displayName`, `description`, and `sila` fields is preserved when the matching command/input/output still exists
+
+Use `--force` when you want to regenerate docs without preserving editable metadata:
 
 ```powershell
 dotnet run --project .\TinyBench.Sdk.Tools\TinyBench.Sdk.Tools.csproj -- --project .\TinyBench.Sdk.DemoDriver --force
