@@ -168,18 +168,19 @@ static void WriteCommandYaml(string outputPath, Type driverType)
 
 static Type UnwrapReturn(Type type)
 {
-    if (type == typeof(Task) || type == typeof(ValueTask))
+    if (IsAsyncReturn(type))
     {
-        return typeof(void);
-    }
-
-    if (type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(Task<>) || type.GetGenericTypeDefinition() == typeof(ValueTask<>)))
-    {
-        return type.GetGenericArguments()[0];
+        throw new InvalidOperationException("TinyBench SDK methods must be synchronous and cannot return Task or ValueTask.");
     }
 
     return type;
 }
+
+static bool IsAsyncReturn(Type type) =>
+    type == typeof(Task) ||
+    type == typeof(ValueTask) ||
+    type.IsGenericType &&
+    (type.GetGenericTypeDefinition() == typeof(Task<>) || type.GetGenericTypeDefinition() == typeof(ValueTask<>));
 
 static (string Name, Type Type)? CreateOutput(MethodInfo method)
 {

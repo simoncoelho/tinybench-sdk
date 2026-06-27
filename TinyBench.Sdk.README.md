@@ -28,7 +28,7 @@ public sealed class HiGDriver
 }
 ```
 
-Exposed methods may only use the TinyBench value language:
+Exposed methods must be `public` and synchronous. They may only use the TinyBench value language:
 
 - `string`
 - `int`
@@ -36,7 +36,7 @@ Exposed methods may only use the TinyBench value language:
 - `bool`
 - arrays of `string`, `int`, `float`, `double`, or `bool`
 - `CancellationToken` as an injected parameter
-- `void`, `Task`, `ValueTask`, `Task<T>`, or `ValueTask<T>` return shapes
+- `void` or a direct scalar/array return value
 
 ## Generated Docs
 

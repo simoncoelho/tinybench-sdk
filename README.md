@@ -7,7 +7,7 @@ The goal is to keep driver code plain and small:
 1. Write a stateful C# class for the device.
 2. Add `[TinyDriver]` to the driver class.
 3. Add `[TinyConnect]`, `[TinyDisconnect]`, and `[TinyCommand]` to the methods you want tooling to expose.
-4. Keep exposed method signatures inside TinyBench's small value language.
+4. Keep exposed methods public, synchronous, and inside TinyBench's small value language.
 5. Run the scaffold tool to create editable docs in `.tinybench`.
 
 The driver should not need to know about SiLA, FDL, protobuf, or gRPC. SiLA-facing metadata lives in generated YAML files that can be edited separately from the driver implementation.
@@ -57,7 +57,7 @@ public sealed class HiGDriver
 
 ## Allowed Method Types
 
-Exposed TinyBench methods may only use:
+Exposed TinyBench methods must be `public` and synchronous. They may only use:
 
 - `string`
 - `bool`
@@ -66,7 +66,7 @@ Exposed TinyBench methods may only use:
 - `float`
 - arrays of `string`, `bool`, `int`, `double`, or `float`
 - optional injected `CancellationToken`
-- `void`, `Task`, `ValueTask`, `Task<T>`, or `ValueTask<T>` return shapes
+- `void` or a direct scalar/array return value
 
 The analyzer reports unsupported exposed signatures at compile time.
 

@@ -11,6 +11,8 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
 {
     public const string UnsupportedParameterId = "TBSDK001";
     public const string UnsupportedReturnId = "TBSDK002";
+    public const string NonPublicMethodId = "TBSDK003";
+    public const string AsyncMethodId = "TBSDK004";
 
     private static readonly DiagnosticDescriptor UnsupportedParameter = new(
         UnsupportedParameterId,
@@ -28,8 +30,24 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor NonPublicMethod = new(
+        NonPublicMethodId,
+        "TinyBench exposed methods must be public",
+        "Method '{0}' must be public",
+        "TinyBench.Sdk",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor AsyncMethod = new(
+        AsyncMethodId,
+        "TinyBench exposed methods must be synchronous",
+        "Method '{0}' must be synchronous and cannot return Task or ValueTask",
+        "TinyBench.Sdk",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(UnsupportedParameter, UnsupportedReturn);
+        ImmutableArray.Create(UnsupportedParameter, UnsupportedReturn, NonPublicMethod, AsyncMethod);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -46,6 +64,14 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
             return;
         }
 
+        if (method.DeclaredAccessibility != Accessibility.Public)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                NonPublicMethod,
+                method.Locations[0],
+                method.Name));
+        }
+
         foreach (var parameter in method.Parameters)
         {
             if (!IsAllowedParameter(parameter.Type))
@@ -58,8 +84,16 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
             }
         }
 
-        var returnType = UnwrapAsyncReturn(method.ReturnType);
-        if (!IsAllowedReturn(returnType))
+        if (IsAsyncReturn(method.ReturnType))
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                AsyncMethod,
+                method.Locations[0],
+                method.Name));
+            return;
+        }
+
+        if (!IsAllowedReturn(method.ReturnType))
         {
             context.ReportDiagnostic(Diagnostic.Create(
                 UnsupportedReturn,
@@ -78,22 +112,15 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
         string.Equals(attribute.AttributeClass?.Name, name, StringComparison.Ordinal) &&
         string.Equals(attribute.AttributeClass?.ContainingNamespace.ToDisplayString(), "TinyBench.Sdk.Core", StringComparison.Ordinal);
 
-    private static ITypeSymbol UnwrapAsyncReturn(ITypeSymbol type)
-    {
-        if (type is INamedTypeSymbol named &&
-            named.IsGenericType &&
-            (IsType(named, "System.Threading.Tasks.Task") || IsType(named, "System.Threading.Tasks.ValueTask")))
-        {
-            return named.TypeArguments[0];
-        }
-
-        return type;
-    }
+    private static bool IsAsyncReturn(ITypeSymbol type) =>
+        IsType(type, "System.Threading.Tasks.Task") ||
+        IsType(type, "System.Threading.Tasks.ValueTask") ||
+        type is INamedTypeSymbol named &&
+        named.IsGenericType &&
+        (IsType(named, "System.Threading.Tasks.Task") || IsType(named, "System.Threading.Tasks.ValueTask"));
 
     private static bool IsAllowedReturn(ITypeSymbol type) =>
         type.SpecialType == SpecialType.System_Void ||
-        IsType(type, "System.Threading.Tasks.Task") ||
-        IsType(type, "System.Threading.Tasks.ValueTask") ||
         IsAllowedTinyType(type);
 
     private static bool IsAllowedParameter(ITypeSymbol type) =>
