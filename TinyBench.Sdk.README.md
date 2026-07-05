@@ -14,7 +14,7 @@ The driver author writes plain C# business logic, marks the driver and exposed m
 ## Driver Authoring
 
 ```csharp
-[TinyDriver("bionex-hig")]
+[TinyDriver]
 public sealed class HiGDriver
 {
     [TinyConnect]
@@ -23,8 +23,11 @@ public sealed class HiGDriver
     [TinyDisconnect]
     public void Disconnect() { }
 
-    [TinyCommand("open-door")]
-    public bool OpenDoor() => true;
+    [TinyCommand]
+    public void OpenDoor(out bool doorOpen)
+    {
+        doorOpen = true;
+    }
 }
 ```
 
@@ -36,7 +39,8 @@ Exposed methods must be `public` and synchronous. They may only use the TinyBenc
 - `bool`
 - arrays of `string`, `int`, `float`, `double`, or `bool`
 - `CancellationToken` as an injected parameter
-- `void` or a direct scalar/array return value
+- `void` return type
+- `out` parameters for command outputs
 
 ## Synced Docs
 
@@ -63,7 +67,7 @@ Each run syncs generated structure from the compiled driver:
 
 - removed commands delete stale command YAML files
 - renamed or added parameters update command YAML inputs
-- changed return types update command YAML outputs
+- changed `out` parameters update command YAML outputs
 - editable metadata such as `displayName`, `description`, and `sila` fields is preserved when the matching command/input/output still exists
 
 Use `--force` when you want to regenerate docs without preserving editable metadata:

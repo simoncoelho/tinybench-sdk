@@ -18,11 +18,11 @@ inputs:
     description: TODO
     required: true
 outputs:
-  - name: "result"
+  - name: "spinResult"
     type: "String"
     array: true
-    displayName: TODO
-    description: TODO
+    displayName: "TODO"
+    description: "TODO"
 sila:
   feature: TODO
   command: TODO

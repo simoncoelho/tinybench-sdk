@@ -25,23 +25,23 @@ public sealed class HiGDriver
     }
 
     [TinyCommand]
-    public bool OpenDoor()
+    public void OpenDoor(out bool doorOpen)
     {
         EnsureConnected();
-        doorOpen = true;
-        return doorOpen;
+        this.doorOpen = true;
+        doorOpen = this.doorOpen;
     }
 
     [TinyCommand]
-    public bool CloseDoor()
+    public void CloseDoor(out bool doorOpen)
     {
         EnsureConnected();
-        doorOpen = false;
-        return doorOpen;
+        this.doorOpen = false;
+        doorOpen = this.doorOpen;
     }
 
     [TinyCommand]
-    public bool LoadRotor()
+    public void LoadRotor(out bool rotorLoaded)
     {
         EnsureConnected();
         if (!doorOpen)
@@ -49,14 +49,15 @@ public sealed class HiGDriver
             throw new InvalidOperationException("Open the door before loading the rotor.");
         }
 
-        rotorLoaded = true;
-        return rotorLoaded;
+        this.rotorLoaded = true;
+        rotorLoaded = this.rotorLoaded;
     }
 
     [TinyCommand]
-    public string[] Spin(
+    public void Spin(
         int targetRcf,
         int durationSeconds,
+        out string[] spinResult,
         CancellationToken cancellationToken = default)
     {
         EnsureConnected();
@@ -76,18 +77,21 @@ public sealed class HiGDriver
         cancellationToken.ThrowIfCancellationRequested();
         spinning = false;
 
-        return [$"targetRcf={targetRcf}", $"durationSeconds={durationSeconds}", "completed=true"];
+        spinResult = [$"targetRcf={targetRcf}", $"durationSeconds={durationSeconds}", "completed=true"];
     }
 
     [TinyCommand]
-    public string[] ReadStatus() =>
-    [
-        $"connected={connected}",
-        $"doorOpen={doorOpen}",
-        $"rotorLoaded={rotorLoaded}",
-        $"spinning={spinning}",
-        $"speedRcf={speedRcf}"
-    ];
+    public void ReadStatus(out string[] status)
+    {
+        status =
+        [
+            $"connected={connected}",
+            $"doorOpen={doorOpen}",
+            $"rotorLoaded={rotorLoaded}",
+            $"spinning={spinning}",
+            $"speedRcf={speedRcf}"
+        ];
+    }
 
     private void EnsureConnected()
     {

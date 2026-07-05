@@ -7,7 +7,7 @@ description: "TODO"
 inputs:
   []
 outputs:
-  - name: "result"
+  - name: "doorOpen"
     type: "Boolean"
     array: false
     displayName: "TODO"

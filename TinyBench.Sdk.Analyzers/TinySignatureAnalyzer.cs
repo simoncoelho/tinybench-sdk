@@ -13,6 +13,7 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
     public const string UnsupportedReturnId = "TBSDK002";
     public const string NonPublicMethodId = "TBSDK003";
     public const string AsyncMethodId = "TBSDK004";
+    public const string RefParameterId = "TBSDK005";
 
     private static readonly DiagnosticDescriptor UnsupportedParameter = new(
         UnsupportedParameterId,
@@ -24,8 +25,8 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
 
     private static readonly DiagnosticDescriptor UnsupportedReturn = new(
         UnsupportedReturnId,
-        "TinyBench exposed methods can only return tiny value types",
-        "Return type '{0}' is not supported",
+        "TinyBench exposed methods must return void",
+        "Method '{0}' must return void; use out parameters for command outputs",
         "TinyBench.Sdk",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -46,8 +47,16 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor RefParameter = new(
+        RefParameterId,
+        "TinyBench exposed methods cannot use ref or in parameters",
+        "Parameter '{0}' uses '{1}', but TinyBench only supports normal inputs and out outputs",
+        "TinyBench.Sdk",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(UnsupportedParameter, UnsupportedReturn, NonPublicMethod, AsyncMethod);
+        ImmutableArray.Create(UnsupportedParameter, UnsupportedReturn, NonPublicMethod, AsyncMethod, RefParameter);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -74,7 +83,17 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
 
         foreach (var parameter in method.Parameters)
         {
-            if (!IsAllowedParameter(parameter.Type))
+            if (parameter.RefKind is RefKind.Ref or RefKind.In)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    RefParameter,
+                    parameter.Locations.FirstOrDefault() ?? method.Locations[0],
+                    parameter.Name,
+                    parameter.RefKind.ToString().ToLowerInvariant()));
+                continue;
+            }
+
+            if (!IsAllowedParameter(parameter))
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     UnsupportedParameter,
@@ -93,12 +112,12 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        if (!IsAllowedReturn(method.ReturnType))
+        if (method.ReturnType.SpecialType != SpecialType.System_Void)
         {
             context.ReportDiagnostic(Diagnostic.Create(
                 UnsupportedReturn,
                 method.Locations[0],
-                method.ReturnType.ToDisplayString()));
+                method.Name));
         }
     }
 
@@ -119,12 +138,15 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
         named.IsGenericType &&
         (IsType(named, "System.Threading.Tasks.Task") || IsType(named, "System.Threading.Tasks.ValueTask"));
 
-    private static bool IsAllowedReturn(ITypeSymbol type) =>
-        type.SpecialType == SpecialType.System_Void ||
-        IsAllowedTinyType(type);
+    private static bool IsAllowedParameter(IParameterSymbol parameter)
+    {
+        if (parameter.RefKind == RefKind.Out)
+        {
+            return IsAllowedTinyType(parameter.Type);
+        }
 
-    private static bool IsAllowedParameter(ITypeSymbol type) =>
-        IsType(type, "System.Threading.CancellationToken") || IsAllowedTinyType(type);
+        return IsType(parameter.Type, "System.Threading.CancellationToken") || IsAllowedTinyType(parameter.Type);
+    }
 
     private static bool IsAllowedTinyType(ITypeSymbol type)
     {

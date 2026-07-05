@@ -61,6 +61,7 @@ static void WriteDriverYaml(string outputPath, Type driverType)
     var existing = Options.Current.Force ? EmptyValues() : ReadTopLevelValues(path);
     var requiredSoftware = Options.Current.Force ? null : ReadBlock(path, "requiredSoftware");
     var driver = driverType.GetCustomAttribute<TinyDriverAttribute>()!;
+    var driverId = string.IsNullOrWhiteSpace(driver.Id) ? driverType.Name : driver.Id;
     var displayName = Preserve(existing, "displayName", "TODO");
     var manufacturer = Preserve(existing, "manufacturer", "TODO");
     var model = Preserve(existing, "model", "TODO");
@@ -70,7 +71,7 @@ static void WriteDriverYaml(string outputPath, Type driverType)
     var yaml = new StringBuilder()
         .AppendLine("# TinyBench driver documentation.")
         .AppendLine("# TinyBench.Sdk.Tools keeps generated fields current and preserves editable metadata when possible.")
-        .AppendLine($"id: {Yaml(driver.Id)}")
+        .AppendLine($"id: {Yaml(driverId)}")
         .AppendLine($"class: {Yaml(driverType.FullName ?? driverType.Name)}")
         .AppendLine($"displayName: {displayName}")
         .AppendLine($"manufacturer: {manufacturer}")
@@ -101,6 +102,18 @@ static void WriteConnectionYaml(string outputPath, Type driverType)
     var existing = Options.Current.Force ? EmptyItems() : ReadItemValues(path, "parameters");
     var connect = driverType.GetMethods().FirstOrDefault(method => method.GetCustomAttribute<TinyConnectAttribute>() is not null);
     var disconnect = driverType.GetMethods().FirstOrDefault(method => method.GetCustomAttribute<TinyDisconnectAttribute>() is not null);
+    if (connect is not null)
+    {
+        EnsureVoidReturn(connect);
+        EnsureParameters(connect);
+    }
+
+    if (disconnect is not null)
+    {
+        EnsureVoidReturn(disconnect);
+        EnsureParameters(disconnect);
+    }
+
     var yaml = new StringBuilder()
         .AppendLine("# Connection docs stay separate from driver code.")
         .AppendLine("# TinyBench.Sdk.Tools keeps method and parameter structure current.")
@@ -114,7 +127,7 @@ static void WriteConnectionYaml(string outputPath, Type driverType)
     }
     else
     {
-        foreach (var parameter in connect.GetParameters().Where(parameter => parameter.ParameterType != typeof(CancellationToken)))
+        foreach (var parameter in connect.GetParameters().Where(IsInputParameter))
         {
             var name = parameter.Name ?? "input";
             var metadata = existing.TryGetValue(name, out var values) ? values : EmptyMutableValues();
@@ -141,9 +154,14 @@ static void WriteCommandYaml(string outputPath, Type driverType)
     Directory.CreateDirectory(commandsPath);
     var discovered = driverType.GetMethods()
         .Where(method => method.GetCustomAttribute<TinyCommandAttribute>() is not null)
-        .Select(method => (Method: method, Command: method.GetCustomAttribute<TinyCommandAttribute>()!))
+        .Select(method =>
+        {
+            var command = method.GetCustomAttribute<TinyCommandAttribute>()!;
+            var commandId = string.IsNullOrWhiteSpace(command.Id) ? method.Name : command.Id;
+            return (Method: method, Id: commandId);
+        })
         .ToArray();
-    var commandIds = discovered.Select(item => item.Command.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+    var commandIds = discovered.Select(item => item.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     foreach (var existingPath in Directory.EnumerateFiles(commandsPath, "*.yaml"))
     {
@@ -155,15 +173,15 @@ static void WriteCommandYaml(string outputPath, Type driverType)
         }
     }
 
-    foreach (var (method, command) in discovered)
+    foreach (var (method, id) in discovered)
     {
-        WriteOneCommandYaml(commandsPath, method, command);
+        WriteOneCommandYaml(commandsPath, method, id);
     }
 }
 
-static void WriteOneCommandYaml(string commandsPath, MethodInfo method, TinyCommandAttribute command)
+static void WriteOneCommandYaml(string commandsPath, MethodInfo method, string commandId)
 {
-    var path = Path.Combine(commandsPath, command.Id + ".yaml");
+    var path = Path.Combine(commandsPath, commandId + ".yaml");
     var topLevel = Options.Current.Force ? EmptyValues() : ReadTopLevelValues(path);
     var existingInputs = Options.Current.Force ? EmptyItems() : ReadItemValues(path, "inputs");
     var existingOutputs = Options.Current.Force ? EmptyItems() : ReadItemValues(path, "outputs");
@@ -173,13 +191,15 @@ static void WriteOneCommandYaml(string commandsPath, MethodInfo method, TinyComm
     var yaml = new StringBuilder()
         .AppendLine("# Command documentation. Keep business logic in C#, keep docs here.")
         .AppendLine("# TinyBench.Sdk.Tools keeps id, method, inputs, and outputs current.")
-        .AppendLine($"id: {Yaml(command.Id)}")
+        .AppendLine($"id: {Yaml(commandId)}")
         .AppendLine($"method: {Yaml(method.Name)}")
         .AppendLine($"displayName: {displayName}")
         .AppendLine($"description: {description}")
         .AppendLine("inputs:");
 
-    var inputs = method.GetParameters().Where(parameter => parameter.ParameterType != typeof(CancellationToken)).ToArray();
+    EnsureVoidReturn(method);
+    EnsureParameters(method);
+    var inputs = method.GetParameters().Where(IsInputParameter).ToArray();
     if (inputs.Length == 0)
     {
         yaml.AppendLine("  []");
@@ -205,20 +225,24 @@ static void WriteOneCommandYaml(string commandsPath, MethodInfo method, TinyComm
     }
 
     yaml.AppendLine("outputs:");
-    var output = CreateOutput(method);
-    if (output is null)
+    var outputs = method.GetParameters().Where(parameter => parameter.IsOut).ToArray();
+    if (outputs.Length == 0)
     {
         yaml.AppendLine("  []");
     }
     else
     {
-        var metadata = existingOutputs.TryGetValue(output.Value.Name, out var values) ? values : EmptyMutableValues();
-        var outputDisplayName = Preserve(metadata, "displayName", "TODO");
-        var outputDescription = Preserve(metadata, "description", "TODO");
-        yaml.AppendLine($"  - name: {Yaml(output.Value.Name)}");
-        AppendType(yaml, output.Value.Type);
-        yaml.AppendLine($"    displayName: {outputDisplayName}");
-        yaml.AppendLine($"    description: {outputDescription}");
+        foreach (var parameter in outputs)
+        {
+            var name = parameter.Name ?? "output";
+            var metadata = existingOutputs.TryGetValue(name, out var values) ? values : EmptyMutableValues();
+            var outputDisplayName = Preserve(metadata, "displayName", "TODO");
+            var outputDescription = Preserve(metadata, "description", "TODO");
+            yaml.AppendLine($"  - name: {Yaml(name)}");
+            AppendType(yaml, parameter.ParameterType);
+            yaml.AppendLine($"    displayName: {outputDisplayName}");
+            yaml.AppendLine($"    description: {outputDescription}");
+        }
     }
 
     var silaFeature = Preserve(sila, "feature", "TODO");
@@ -242,21 +266,56 @@ static Type UnwrapReturn(Type type)
     return type;
 }
 
+static bool IsInputParameter(ParameterInfo parameter) =>
+    parameter.ParameterType != typeof(CancellationToken) && !parameter.IsOut;
+
+static void EnsureVoidReturn(MethodInfo method)
+{
+    if (method.ReturnType != typeof(void))
+    {
+        throw new InvalidOperationException($"TinyBench SDK method {method.DeclaringType?.FullName}.{method.Name} must return void. Use out parameters for command outputs.");
+    }
+}
+
+static void EnsureParameters(MethodInfo method)
+{
+    foreach (var parameter in method.GetParameters())
+    {
+        if (parameter.ParameterType.IsByRef && !parameter.IsOut)
+        {
+            throw new InvalidOperationException($"TinyBench SDK parameter {method.DeclaringType?.FullName}.{method.Name}.{parameter.Name} cannot use ref or in. Use normal inputs or out outputs.");
+        }
+
+        var type = parameter.ParameterType.IsByRef
+            ? parameter.ParameterType.GetElementType()!
+            : parameter.ParameterType;
+
+        if (type == typeof(CancellationToken) && !parameter.IsOut)
+        {
+            continue;
+        }
+
+        if (!TinyTypeRules.IsAllowed(type))
+        {
+            throw new InvalidOperationException($"TinyBench SDK parameter {method.DeclaringType?.FullName}.{method.Name}.{parameter.Name} uses unsupported type {type.FullName}.");
+        }
+    }
+}
+
 static bool IsAsyncReturn(Type type) =>
     type == typeof(Task) ||
     type == typeof(ValueTask) ||
     type.IsGenericType &&
     (type.GetGenericTypeDefinition() == typeof(Task<>) || type.GetGenericTypeDefinition() == typeof(ValueTask<>));
 
-static (string Name, Type Type)? CreateOutput(MethodInfo method)
-{
-    var outputType = UnwrapReturn(method.ReturnType);
-    return outputType == typeof(void) ? null : ("result", outputType);
-}
-
 static void AppendType(StringBuilder yaml, Type type)
 {
     type = UnwrapReturn(type);
+    if (type.IsByRef)
+    {
+        type = type.GetElementType()!;
+    }
+
     var isArray = type.IsArray;
     yaml.AppendLine($"    type: {Yaml(TinyTypeRules.KindFor(type).ToString())}");
     yaml.AppendLine($"    array: {isArray.ToString().ToLowerInvariant()}");

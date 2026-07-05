@@ -24,7 +24,7 @@ The driver should not need to know about SiLA, FDL, protobuf, or gRPC. SiLA-faci
 ```csharp
 using TinyBench.Sdk.Core;
 
-[TinyDriver("bionex-hig")]
+[TinyDriver]
 public sealed class HiGDriver
 {
     [TinyConnect]
@@ -39,18 +39,22 @@ public sealed class HiGDriver
         // Close vendor SDK / hardware connection.
     }
 
-    [TinyCommand("open-door")]
-    public bool OpenDoor()
+    [TinyCommand]
+    public void OpenDoor(out bool doorOpen)
     {
         // Business logic stays here.
-        return true;
+        doorOpen = true;
     }
 
-    [TinyCommand("spin")]
-    public string[] Spin(int targetRcf, int durationSeconds, CancellationToken cancellationToken = default)
+    [TinyCommand]
+    public void Spin(
+        int targetRcf,
+        int durationSeconds,
+        out string[] spinResult,
+        CancellationToken cancellationToken = default)
     {
         // Business logic stays here.
-        return [$"targetRcf={targetRcf}", $"durationSeconds={durationSeconds}", "completed=true"];
+        spinResult = [$"targetRcf={targetRcf}", $"durationSeconds={durationSeconds}", "completed=true"];
     }
 }
 ```
@@ -66,7 +70,8 @@ Exposed TinyBench methods must be `public` and synchronous. They may only use:
 - `float`
 - arrays of `string`, `bool`, `int`, `double`, or `float`
 - optional injected `CancellationToken`
-- `void` or a direct scalar/array return value
+- `void` return type
+- `out` parameters for command outputs
 
 The analyzer reports unsupported exposed signatures at compile time.
 
@@ -92,18 +97,18 @@ TinyBench.Sdk.DemoDriver/
     driver.yaml
     connection.yaml
     commands/
-      open-door.yaml
-      close-door.yaml
-      load-rotor.yaml
+      OpenDoor.yaml
+      CloseDoor.yaml
+      LoadRotor.yaml
       spin.yaml
-      read-status.yaml
+      ReadStatus.yaml
 ```
 
 Each run syncs generated structure from the compiled driver:
 
 - removed commands delete stale command YAML files
 - renamed or added parameters update command YAML inputs
-- changed return types update command YAML outputs
+- changed `out` parameters update command YAML outputs
 - editable metadata such as `displayName`, `description`, and `sila` fields is preserved when the matching command/input/output still exists
 
 Use `--force` when you want to regenerate docs without preserving editable metadata:
@@ -117,7 +122,7 @@ dotnet run --project .\TinyBench.Sdk.Tools\TinyBench.Sdk.Tools.csproj -- --proje
 Generated command YAML contains the information that should not live in driver code:
 
 ```yaml
-id: "spin"
+id: "Spin"
 method: "Spin"
 displayName: TODO
 description: TODO
@@ -129,7 +134,7 @@ inputs:
     description: TODO
     required: true
 outputs:
-  - name: "result"
+  - name: "spinResult"
     type: "String"
     array: true
     displayName: TODO
