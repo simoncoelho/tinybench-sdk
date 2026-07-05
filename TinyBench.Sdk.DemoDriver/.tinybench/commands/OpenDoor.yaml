@@ -1,18 +1,18 @@
 ﻿# Command documentation. Keep business logic in C#, keep docs here.
 # TinyBench.Sdk.Tools keeps id, method, inputs, and outputs current.
-id: "close-door"
-method: "CloseDoor"
-displayName: TODO
-description: TODO
+id: "OpenDoor"
+method: "OpenDoor"
+displayName: "TODO"
+description: "TODO"
 inputs:
   []
 outputs:
   - name: "result"
     type: "Boolean"
     array: false
-    displayName: TODO
-    description: TODO
+    displayName: "TODO"
+    description: "TODO"
 sila:
-  feature: TODO
-  command: TODO
-  description: TODO
+  feature: "TODO"
+  command: "TODO"
+  description: "TODO"

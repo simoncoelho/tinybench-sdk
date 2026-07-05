@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <None Include=".tinybench\commands\close-door.yaml" />
-    <None Include=".tinybench\commands\load-rotor.yaml" />
-    <None Include=".tinybench\commands\open-door.yaml" />
-    <None Include=".tinybench\commands\read-status.yaml" />
+    <None Include=".tinybench\commands\CloseDoor.yaml" />
+    <None Include=".tinybench\commands\LoadRotor.yaml" />
+    <None Include=".tinybench\commands\OpenDoor.yaml" />
+    <None Include=".tinybench\commands\ReadStatus.yaml" />
     <None Include=".tinybench\commands\spin.yaml" />
     <None Include=".tinybench\connection.yaml" />
     <None Include=".tinybench\driver.yaml" />
