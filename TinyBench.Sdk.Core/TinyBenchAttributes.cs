@@ -1,10 +1,12 @@
+using System.Runtime.CompilerServices;
+
 namespace TinyBench.Sdk.Core;
 
 /// <summary>
 /// Marks the root class for a TinyBench driver library.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-public sealed class TinyDriverAttribute(string id) : Attribute
+public sealed class TinyDriverAttribute([CallerMemberName] string id = "") : Attribute
 {
     /// <summary>Stable driver identifier used by generated documentation and adapters.</summary>
     public string Id { get; } = id;
@@ -26,7 +28,7 @@ public sealed class TinyDisconnectAttribute : Attribute;
 /// Marks a method as a command that can be exposed by TinyBench tooling.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class TinyCommandAttribute(string id) : Attribute
+public sealed class TinyCommandAttribute([CallerMemberName] string id = "") : Attribute
 {
     /// <summary>Stable command identifier.</summary>
     public string Id { get; } = id;

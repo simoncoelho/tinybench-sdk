@@ -68,7 +68,7 @@ static void WriteDriverYaml(string outputPath, Type driverType)
     var description = Preserve(existing, "description", "TODO");
     var setupInstructions = Preserve(existing, "setupInstructions", "TODO");
     var yaml = new StringBuilder()
-        .AppendLine("# Human-owned TinyBench driver documentation.")
+        .AppendLine("# TinyBench driver documentation.")
         .AppendLine("# TinyBench.Sdk.Tools keeps generated fields current and preserves editable metadata when possible.")
         .AppendLine($"id: {Yaml(driver.Id)}")
         .AppendLine($"class: {Yaml(driverType.FullName ?? driverType.Name)}")

@@ -2,7 +2,7 @@ using TinyBench.Sdk.Core;
 
 namespace TinyBench.Sdk.DemoDriver;
 
-[TinyDriver("bionex-hig")]
+[TinyDriver]
 public sealed class HiGDriver
 {
     private bool connected;
@@ -24,7 +24,7 @@ public sealed class HiGDriver
         spinning = false;
     }
 
-    [TinyCommand("open-door")]
+    [TinyCommand]
     public bool OpenDoor()
     {
         EnsureConnected();
@@ -32,7 +32,7 @@ public sealed class HiGDriver
         return doorOpen;
     }
 
-    [TinyCommand("close-door")]
+    [TinyCommand]
     public bool CloseDoor()
     {
         EnsureConnected();
@@ -40,7 +40,7 @@ public sealed class HiGDriver
         return doorOpen;
     }
 
-    [TinyCommand("load-rotor")]
+    [TinyCommand]
     public bool LoadRotor()
     {
         EnsureConnected();
@@ -53,7 +53,7 @@ public sealed class HiGDriver
         return rotorLoaded;
     }
 
-    [TinyCommand("spin")]
+    [TinyCommand]
     public string[] Spin(
         int targetRcf,
         int durationSeconds,
@@ -79,7 +79,7 @@ public sealed class HiGDriver
         return [$"targetRcf={targetRcf}", $"durationSeconds={durationSeconds}", "completed=true"];
     }
 
-    [TinyCommand("read-status")]
+    [TinyCommand]
     public string[] ReadStatus() =>
     [
         $"connected={connected}",
