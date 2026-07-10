@@ -2,5 +2,7 @@
   <Project Path="TinyBench.Sdk.Analyzers/TinyBench.Sdk.Analyzers.csproj" />
   <Project Path="TinyBench.Sdk.Core/TinyBench.Sdk.Core.csproj" />
   <Project Path="TinyBench.Sdk.DemoDriver/TinyBench.Sdk.DemoDriver.csproj" />
+  <Project Path="TinyBench.Sdk.Driver/TinyBench.Sdk.Driver.csproj" Id="b191aa18-bdef-446d-be9a-e07e025d6f29" />
+  <Project Path="TinyBench.Sdk.RestHost/TinyBench.Sdk.RestHost.csproj" />
   <Project Path="TinyBench.Sdk.Tools/TinyBench.Sdk.Tools.csproj" />
 </Solution>
