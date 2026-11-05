@@ -1,0 +1,23 @@
+﻿# Command documentation. Keep business logic in C#, keep docs here.
+# TinyBench.Sdk.Tools keeps id, method, inputs, and outputs current.
+id: "SetTemperature"
+method: "SetTemperature"
+displayName: "TODO"
+description: "TODO"
+inputs:
+  - name: "targetCelsius"
+    type: "Float"
+    array: false
+    displayName: "TODO"
+    description: "TODO"
+    required: true
+outputs:
+  - name: "actualCelsius"
+    type: "Float"
+    array: false
+    displayName: "TODO"
+    description: "TODO"
+sila:
+  feature: "TODO"
+  command: "TODO"
+  description: "TODO"

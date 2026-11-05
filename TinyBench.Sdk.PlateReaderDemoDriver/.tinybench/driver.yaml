@@ -1,0 +1,12 @@
+﻿# TinyBench driver documentation.
+# TinyBench.Sdk.Tools keeps generated fields current and preserves editable metadata when possible.
+id: "PlateReaderDriver"
+class: "TinyBench.Sdk.PlateReaderDemoDriver.PlateReaderDriver"
+displayName: "TODO"
+manufacturer: "TODO"
+model: "TODO"
+version: "0.1.0"
+description: "TODO"
+requiredSoftware:
+  - TODO
+setupInstructions: "TODO"

@@ -6,7 +6,8 @@ The driver author writes plain C# business logic, marks the driver and exposed m
 
 ## Projects
 
-- `TinyBench.Sdk.Core`: attributes and tiny value types used by driver libraries.
+- `TinyBench.Core`: shared scalar, array, and table value model.
+- `TinyBench.Sdk.Core`: driver attributes and C# mappings to the shared model.
 - `TinyBench.Sdk.Analyzers`: compile-time checks for exposed method signatures.
 - `TinyBench.Sdk.Tools`: scaffolds YAML docs from an attributed driver assembly.
 - `TinyBench.Sdk.DemoDriver`: HiG demo driver using the SDK.
@@ -38,9 +39,15 @@ Exposed methods must be `public` and synchronous. They may only use the TinyBenc
 - `float`, `double`
 - `bool`
 - arrays of `string`, `int`, `float`, `double`, or `bool`
+- `TinyBench.Core.TinyTable` for typed scalar tables, with nullability declared per column
 - `CancellationToken` as an injected parameter
 - `void` return type
 - `out` parameters for command outputs
+
+Both `float` and `double` map to the shared `Float` kind; `int` maps to `Integer`.
+Arrays are one-dimensional and contain non-null scalar elements. Tables enforce
+their column types, row widths, and per-column nullability. See
+[TinyBench.Core](TinyBench.Core/README.md) for examples and migration notes.
 
 ## Synced Docs
 

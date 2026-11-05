@@ -38,6 +38,7 @@ namespace TinyBench.Sdk
     {
         public TinyMethodArg(string name, Type type, bool? isRequired = null, object? defaultValue = null)
         {
+            ValueType = Core.TinyTypeRules.Describe(type);
             Name = name;
             Type = type;
             IsRequired = isRequired;
@@ -45,6 +46,7 @@ namespace TinyBench.Sdk
         }
         public string Name { get; }
         public Type Type { get; }
+        public TinyBench.Core.TinyType ValueType { get; }
         public bool? IsRequired { get; }
         public object? DefaultValue { get; }
     }

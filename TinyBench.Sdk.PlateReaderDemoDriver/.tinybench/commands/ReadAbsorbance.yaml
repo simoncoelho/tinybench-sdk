@@ -1,0 +1,29 @@
+﻿# Command documentation. Keep business logic in C#, keep docs here.
+# TinyBench.Sdk.Tools keeps id, method, inputs, and outputs current.
+id: "ReadAbsorbance"
+method: "ReadAbsorbance"
+displayName: "TODO"
+description: "TODO"
+inputs:
+  - name: "plateId"
+    type: "String"
+    array: false
+    displayName: "TODO"
+    description: "TODO"
+    required: true
+  - name: "wavelengthNm"
+    type: "Integer"
+    array: false
+    displayName: "TODO"
+    description: "TODO"
+    required: true
+outputs:
+  - name: "measurements"
+    type: "Table"
+    array: false
+    displayName: "TODO"
+    description: "TODO"
+sila:
+  feature: "TODO"
+  command: "TODO"
+  description: "TODO"

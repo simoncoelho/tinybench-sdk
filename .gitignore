@@ -2,6 +2,8 @@
 
 # Visual Studio / IDE state
 .vs/
+*.csproj.user
+*.slnLaunch.user
 
 # Build results
 [Dd]ebug/
@@ -32,6 +34,11 @@ ScaffoldingReadMe.txt
 # NuGet packages
 *.nupkg
 *.snupkg
+
+# Node / frontend
+node_modules/
+dist/
+*.tsbuildinfo
 
 # Environment
 .env

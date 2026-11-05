@@ -14,10 +14,14 @@ The driver should not need to know about SiLA, FDL, protobuf, or gRPC. SiLA-faci
 
 ## Projects
 
-- `TinyBench.Sdk.Core`: tiny driver authoring attributes and value rules.
+- `TinyBench.Core`: shared scalar, array, and table value model used by the SDK and platform.
+- `TinyBench.Sdk.Core`: driver authoring attributes and C# mappings to the shared value model.
 - `TinyBench.Sdk.Analyzers`: compile-time checks for exposed method signatures.
 - `TinyBench.Sdk.Tools`: generates `.tinybench` YAML documentation from attributed driver assemblies.
+- `TinyBench.Sdk.RestHost`: wraps a compiled TinyBench driver DLL with a REST API.
+- `TinyBench.Workbench`: React Flow node editor for adding REST-hosted devices and running simple workflows.
 - `TinyBench.Sdk.DemoDriver`: HiG demo driver using the SDK.
+- `TinyBench.Sdk.PlateReaderDemoDriver`: second demo driver for multi-device workflow testing.
 
 ## Driver Authoring
 
@@ -69,11 +73,18 @@ Exposed TinyBench methods must be `public` and synchronous. They may only use:
 - `double`
 - `float`
 - arrays of `string`, `bool`, `int`, `double`, or `float`
+- `TinyBench.Core.TinyTable` for tables with typed scalar columns and explicit per-column nullability
 - optional injected `CancellationToken`
 - `void` return type
 - `out` parameters for command outputs
 
 The analyzer reports unsupported exposed signatures at compile time.
+
+The shared model distinguishes `Integer` from `Float`; both C# `float` and `double`
+map to `Float`. Arrays must be one-dimensional scalar arrays. Table cells may be
+null only in columns declared nullable; arrays and nested tables cannot be cells.
+See [the Core value model](TinyBench.Core/README.md) for the contract, table examples,
+and migration details. The plate-reader demo returns a table from `ReadAbsorbance`.
 
 ## Generate Docs
 
@@ -146,3 +157,55 @@ sila:
 ```
 
 This keeps implementation code and external interface documentation separate, while still letting tooling generate SiLA-facing files later.
+
+## REST Host
+
+Build a driver, sync its `.tinybench` docs, then point the REST host at the compiled driver DLL:
+
+```powershell
+dotnet run --project .\TinyBench.Sdk.RestHost\TinyBench.Sdk.RestHost.csproj -- `
+  --driver-assembly .\TinyBench.Sdk.DemoDriver\bin\Debug\net10.0\TinyBench.Sdk.DemoDriver.dll `
+  --docs .\TinyBench.Sdk.DemoDriver\.tinybench
+```
+
+The host exposes the driver through a small REST API:
+
+- `GET /v1/definition`
+- `GET /v1/device`
+- `GET /v1/connection`
+- `POST /v1/connection/connect`
+- `POST /v1/connection/disconnect`
+- `GET /v1/commands`
+- `GET /v1/commands/{commandId}`
+- `POST /v1/commands/{commandId}/runs`
+- `GET /v1/runs`
+- `GET /v1/runs/{runId}`
+- `POST /v1/runs/{runId}/cancel`
+
+Only one command run is allowed at a time by default. If another command is already running, new run requests return `409 Conflict`.
+
+Swagger is available at `/swagger` when the REST host is running.
+
+## Workbench
+
+Run one REST host per available device:
+
+```powershell
+dotnet run --project .\TinyBench.Sdk.RestHost\TinyBench.Sdk.RestHost.csproj --urls http://localhost:5093 -- `
+  --driver-assembly .\TinyBench.Sdk.DemoDriver\bin\Debug\net10.0\TinyBench.Sdk.DemoDriver.dll `
+  --docs .\TinyBench.Sdk.DemoDriver\.tinybench
+
+dotnet run --project .\TinyBench.Sdk.RestHost\TinyBench.Sdk.RestHost.csproj --urls http://localhost:5094 -- `
+  --driver-assembly .\TinyBench.Sdk.PlateReaderDemoDriver\bin\Debug\net10.0\TinyBench.Sdk.PlateReaderDemoDriver.dll `
+  --docs .\TinyBench.Sdk.PlateReaderDemoDriver\.tinybench
+```
+
+Then start the React Flow workbench:
+
+```powershell
+cd .\TinyBench.Workbench
+npm install
+npm run dev
+```
+
+Open `http://127.0.0.1:5089`. Add the available devices you want in the system, connect them, drag command nodes or variable nodes onto the graph, then connect variable outputs to command input handles or command output handles back into variables. Workflows run command nodes from top to bottom and show final outputs on each node.

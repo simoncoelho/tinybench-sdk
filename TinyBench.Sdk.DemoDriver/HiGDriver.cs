@@ -81,16 +81,18 @@ public sealed class HiGDriver
     }
 
     [TinyCommand]
-    public void ReadStatus(out string[] status)
+    public void ReadStatus(
+        out bool connected,
+        out bool doorOpen,
+        out bool rotorLoaded,
+        out bool spinning,
+        out int speedRcf)
     {
-        status =
-        [
-            $"connected={connected}",
-            $"doorOpen={doorOpen}",
-            $"rotorLoaded={rotorLoaded}",
-            $"spinning={spinning}",
-            $"speedRcf={speedRcf}"
-        ];
+        connected = this.connected;
+        doorOpen = this.doorOpen;
+        rotorLoaded = this.rotorLoaded;
+        spinning = this.spinning;
+        speedRcf = this.speedRcf;
     }
 
     private void EnsureConnected()

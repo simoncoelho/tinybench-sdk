@@ -103,7 +103,7 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
             }
         }
 
-        if (IsAsyncReturn(method.ReturnType))
+        if (method.IsAsync || IsAsyncReturn(method.ReturnType))
         {
             context.ReportDiagnostic(Diagnostic.Create(
                 AsyncMethod,
@@ -155,8 +155,17 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
             type = nullable.TypeArguments[0];
         }
 
+        if (IsType(type, "TinyBench.Core.TinyTable"))
+        {
+            return true;
+        }
+
         if (type is IArrayTypeSymbol array)
         {
+            if (array.Rank != 1 || !array.IsSZArray)
+            {
+                return false;
+            }
             type = array.ElementType;
         }
 

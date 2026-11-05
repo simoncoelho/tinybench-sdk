@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\TinyBench.Core\TinyBench.Core.csproj" />
+    <ProjectReference Include="..\TinyBench.Sdk.Core\TinyBench.Sdk.Core.csproj" />
+  </ItemGroup>
 </Project>

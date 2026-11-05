@@ -7,9 +7,29 @@ description: "TODO"
 inputs:
   []
 outputs:
-  - name: "status"
-    type: "String"
-    array: true
+  - name: "connected"
+    type: "Boolean"
+    array: false
+    displayName: "TODO"
+    description: "TODO"
+  - name: "doorOpen"
+    type: "Boolean"
+    array: false
+    displayName: "TODO"
+    description: "TODO"
+  - name: "rotorLoaded"
+    type: "Boolean"
+    array: false
+    displayName: "TODO"
+    description: "TODO"
+  - name: "spinning"
+    type: "Boolean"
+    array: false
+    displayName: "TODO"
+    description: "TODO"
+  - name: "speedRcf"
+    type: "Integer"
+    array: false
     displayName: "TODO"
     description: "TODO"
 sila:

@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
+using TinyBench.Core;
 using TinyBench.Sdk.Core;
 
 var options = Options.Parse(args);
@@ -316,8 +317,9 @@ static void AppendType(StringBuilder yaml, Type type)
         type = type.GetElementType()!;
     }
 
-    var isArray = type.IsArray;
-    yaml.AppendLine($"    type: {Yaml(TinyTypeRules.KindFor(type).ToString())}");
+    var description = TinyTypeRules.Describe(type);
+    var isArray = description.Kind == TinyValueKind.Array;
+    yaml.AppendLine($"    type: {Yaml((description.ElementKind ?? description.Kind).ToString())}");
     yaml.AppendLine($"    array: {isArray.ToString().ToLowerInvariant()}");
 }
 
