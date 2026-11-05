@@ -6,6 +6,10 @@ namespace TinyBench.Tests;
 
 public class ValueModelTests
 {
+    [Test]
+    public void SharedClrRegistryCannotBeMutated() =>
+        Assert.Throws<NotSupportedException>(() => ((IDictionary<Type, TinyType>)TinyType.ClrTypes).Clear());
+
     [TestCase(typeof(string), TinyValueKind.String)]
     [TestCase(typeof(bool), TinyValueKind.Boolean)]
     [TestCase(typeof(int), TinyValueKind.Integer)]

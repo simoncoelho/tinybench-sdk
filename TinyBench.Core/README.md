@@ -2,7 +2,7 @@
 
 The small, transport-independent value contract shared by the SDK and platform.
 This library targets .NET 10 and has no package dependencies. Driver attributes,
-C# signature mapping, JSON transport, and workflow execution live outside Core.
+JSON transport, and workflow execution live outside Core.
 
 ## Four public types
 
@@ -49,9 +49,15 @@ applicable.
 
 ## SDK integration
 
+`TinyType.ClrTypes` is the immutable registry of supported C# representations.
+Scalar registrations generate their vector and nullable scalar entries; tables
+are registered separately. Both SDK reflection checks and the Roslyn analyzer
+consume this registry, so there is no separate analyzer type allowlist. Core's
+value validation also uses the registry.
+
 Driver attributes remain in `TinyBench.Sdk.Core`. That library references Core
-and provides `TinyTypeRules.Describe(typeof(TinyTable))` and the corresponding
-scalar/array mappings. Drivers can accept `TinyTable` inputs and return tables
+and provides `TinyTypeRules.Describe(typeof(TinyTable))` by looking up the shared
+registry. Drivers can accept `TinyTable` inputs and return tables
 through `out TinyTable` parameters. Column schemas accompany table values;
 they are not inferred from a method signature or executed during scaffolding.
 
@@ -88,3 +94,5 @@ dotnet test .\TinyBench.Tests\TinyBench.Tests.csproj
 Tests cover shared value validation, table immutability and nullability, analyzer
 signatures, REST conversion, generated metadata preservation, and a table input
 and output crossing a dynamically loaded driver boundary.
+Registry-driven tests cover every supported C# representation, and compiler-process
+tests verify that the analyzer loads its Core dependency and rejects unsupported signatures.

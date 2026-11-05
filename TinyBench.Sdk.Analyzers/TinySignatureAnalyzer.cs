@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using TinyBench.Core;
 
 namespace TinyBench.Sdk.Analyzers;
 
@@ -62,10 +64,21 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
     {
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
-        context.RegisterSymbolAction(AnalyzeMethod, SymbolKind.Method);
+        context.RegisterCompilationStartAction(startContext =>
+        {
+            var supportedTypes = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+            foreach (var clrType in TinyType.ClrTypes.Keys)
+            {
+                var symbol = ResolveType(startContext.Compilation, clrType);
+                if (symbol is not null)
+                    supportedTypes.Add(symbol);
+            }
+
+            startContext.RegisterSymbolAction(methodContext => AnalyzeMethod(methodContext, supportedTypes), SymbolKind.Method);
+        });
     }
 
-    private static void AnalyzeMethod(SymbolAnalysisContext context)
+    private static void AnalyzeMethod(SymbolAnalysisContext context, HashSet<ITypeSymbol> supportedTypes)
     {
         var method = (IMethodSymbol)context.Symbol;
         if (!IsExposed(method))
@@ -93,7 +106,7 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
                 continue;
             }
 
-            if (!IsAllowedParameter(parameter))
+            if (!IsAllowedParameter(parameter, supportedTypes))
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     UnsupportedParameter,
@@ -138,43 +151,29 @@ public sealed class TinySignatureAnalyzer : DiagnosticAnalyzer
         named.IsGenericType &&
         (IsType(named, "System.Threading.Tasks.Task") || IsType(named, "System.Threading.Tasks.ValueTask"));
 
-    private static bool IsAllowedParameter(IParameterSymbol parameter)
+    private static bool IsAllowedParameter(IParameterSymbol parameter, HashSet<ITypeSymbol> supportedTypes) =>
+        supportedTypes.Contains(parameter.Type) ||
+        parameter.RefKind != RefKind.Out && IsType(parameter.Type, "System.Threading.CancellationToken");
+
+    // This only translates CLR type identities into compiler symbols; Core owns every allowed type/shape.
+    private static ITypeSymbol? ResolveType(Compilation compilation, Type type)
     {
-        if (parameter.RefKind == RefKind.Out)
+        if (type.IsArray)
         {
-            return IsAllowedTinyType(parameter.Type);
+            var element = ResolveType(compilation, type.GetElementType()!);
+            return element is null ? null : compilation.CreateArrayTypeSymbol(element, type.GetArrayRank());
         }
 
-        return IsType(parameter.Type, "System.Threading.CancellationToken") || IsAllowedTinyType(parameter.Type);
-    }
-
-    private static bool IsAllowedTinyType(ITypeSymbol type)
-    {
-        if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
+        if (type.IsGenericType)
         {
-            type = nullable.TypeArguments[0];
+            var definition = compilation.GetTypeByMetadataName(type.GetGenericTypeDefinition().FullName!);
+            var arguments = type.GetGenericArguments().Select(argument => ResolveType(compilation, argument)).ToArray();
+            return definition is null || arguments.Any(argument => argument is null)
+                ? null
+                : definition.Construct(arguments!);
         }
 
-        if (IsType(type, "TinyBench.Core.TinyTable"))
-        {
-            return true;
-        }
-
-        if (type is IArrayTypeSymbol array)
-        {
-            if (array.Rank != 1 || !array.IsSZArray)
-            {
-                return false;
-            }
-            type = array.ElementType;
-        }
-
-        return type.SpecialType is
-            SpecialType.System_String or
-            SpecialType.System_Int32 or
-            SpecialType.System_Single or
-            SpecialType.System_Double or
-            SpecialType.System_Boolean;
+        return compilation.GetTypeByMetadataName(type.FullName!);
     }
 
     private static bool IsType(ITypeSymbol type, string metadataName) =>

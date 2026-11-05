@@ -11,12 +11,42 @@ namespace TinyBench.Tests;
 
 public class SignatureAnalyzerTests
 {
+    public static IEnumerable<Type> RegisteredTypes => TinyType.ClrTypes.Keys;
+
+    [TestCaseSource(nameof(RegisteredTypes))]
+    public async Task EveryCoreRegistrationIsAcceptedByBothSdkAndAnalyzer(Type type)
+    {
+        Assert.That(TinyTypeRules.Describe(type), Is.EqualTo(TinyType.ClrTypes[type]));
+        var name = CSharpTypeName(type);
+        var diagnostics = await Analyze($$"""
+            using TinyBench.Sdk.Core;
+            public class Driver
+            {
+                [TinyCommand]
+                public void Echo({{name}} value, out {{name}} result) { result = value; }
+            }
+            """);
+        Assert.That(diagnostics, Is.Empty);
+    }
+
+    private static string CSharpTypeName(Type type)
+    {
+        if (type.IsArray)
+            return CSharpTypeName(type.GetElementType()!) + "[]";
+        if (type.IsGenericType)
+            return type.GetGenericTypeDefinition().FullName!.Split('`')[0]
+                + "<" + string.Join(", ", type.GetGenericArguments().Select(CSharpTypeName)) + ">";
+        return type.FullName!;
+    }
+
     [TestCase("string", true)]
     [TestCase("bool", true)]
     [TestCase("int", true)]
     [TestCase("float", true)]
     [TestCase("double", true)]
     [TestCase("int?", true)]
+    [TestCase("string?", true)]
+    [TestCase("TinyTable?", true)]
     [TestCase("string[]", true)]
     [TestCase("bool[]", true)]
     [TestCase("int[]", true)]

@@ -34,26 +34,6 @@ public static class TinyTypeRules
     private static TinyType? TryDescribe(Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
-        type = Nullable.GetUnderlyingType(type) ?? type;
-        if (type == typeof(TinyTable)) return new(TinyValueKind.Table);
-        if (type.IsArray)
-        {
-            var elementKind = ScalarKind(type.GetElementType()!);
-            return type.IsSZArray && elementKind is not null
-                ? new(TinyValueKind.Array, elementKind)
-                : null;
-        }
-
-        var kind = ScalarKind(type);
-        return kind is null ? null : new(kind.Value);
-    }
-
-    private static TinyValueKind? ScalarKind(Type type)
-    {
-        if (type == typeof(string)) return TinyValueKind.String;
-        if (type == typeof(bool)) return TinyValueKind.Boolean;
-        if (type == typeof(int)) return TinyValueKind.Integer;
-        if (type == typeof(float) || type == typeof(double)) return TinyValueKind.Float;
-        return null;
+        return TinyType.ClrTypes.GetValueOrDefault(type);
     }
 }

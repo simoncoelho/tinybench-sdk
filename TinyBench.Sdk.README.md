@@ -8,7 +8,7 @@ The driver author writes plain C# business logic, marks the driver and exposed m
 
 - `TinyBench.Core`: shared scalar, array, and table value model.
 - `TinyBench.Sdk.Core`: driver attributes and C# mappings to the shared model.
-- `TinyBench.Sdk.Analyzers`: compile-time checks for exposed method signatures.
+- `TinyBench.Sdk.Analyzers`: .NET 10 compiler checks using Core's shared type registry.
 - `TinyBench.Sdk.Tools`: scaffolds YAML docs from an attributed driver assembly.
 - `TinyBench.Sdk.DemoDriver`: HiG demo driver using the SDK.
 

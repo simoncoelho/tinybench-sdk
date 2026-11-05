@@ -16,7 +16,7 @@ The driver should not need to know about SiLA, FDL, protobuf, or gRPC. SiLA-faci
 
 - `TinyBench.Core`: shared scalar, array, and table value model used by the SDK and platform.
 - `TinyBench.Sdk.Core`: driver authoring attributes and C# mappings to the shared value model.
-- `TinyBench.Sdk.Analyzers`: compile-time checks for exposed method signatures.
+- `TinyBench.Sdk.Analyzers`: .NET 10 compiler checks for exposed signatures, using Core's shared type registry.
 - `TinyBench.Sdk.Tools`: generates `.tinybench` YAML documentation from attributed driver assemblies.
 - `TinyBench.Sdk.RestHost`: wraps a compiled TinyBench driver DLL with a REST API.
 - `TinyBench.Workbench`: React Flow node editor for adding REST-hosted devices and running simple workflows.
@@ -79,6 +79,9 @@ Exposed TinyBench methods must be `public` and synchronous. They may only use:
 - `out` parameters for command outputs
 
 The analyzer reports unsupported exposed signatures at compile time.
+
+The SDK and analyzer both read `TinyType.ClrTypes` from Core. The analyzer requires
+a .NET 10-compatible compiler host; see [analyzer setup](TinyBench.Sdk.Analyzers/README.md).
 
 The shared model distinguishes `Integer` from `Float`; both C# `float` and `double`
 map to `Float`. Arrays must be one-dimensional scalar arrays. Table cells may be
